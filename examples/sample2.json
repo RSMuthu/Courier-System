@@ -1,0 +1,44 @@
+{
+  "transport": {
+    "count": 2,
+    "speed": 70,
+    "max_load": 200
+  },
+  "products": [
+    {
+      "name": "p1",
+      "weight": 50,
+      "destination_distance": 30,
+      "base_cost": 100,
+      "offer": "OFR001"
+    },
+    {
+      "name": "p2",
+      "weight": 100,
+      "destination_distance": 60,
+      "base_cost": 100,
+      "offer": "OFFR0008"
+    },
+    {
+      "name": "p3",
+      "weight": 100,
+      "destination_distance": 70,
+      "base_cost": 100,
+      "offer": "OFFR003"
+    },
+    {
+      "name": "p4",
+      "weight": 100,
+      "destination_distance": 30,
+      "base_cost": 100,
+      "offer": "OFR002"
+    },
+    {
+      "name": "p5",
+      "weight": 50,
+      "destination_distance": 30,
+      "base_cost": 100,
+      "offer": "NA"
+    }
+  ]
+}
