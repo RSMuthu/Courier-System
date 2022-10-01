@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "courier"
-version = "0.1.0"
+version = "0.1.1"
 description = "Basic Courier Management system"
 authors = ["Muthu Kumaran R <rsmuthu@duck.com>"]
 readme = "README.md"
