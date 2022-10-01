@@ -1,5 +1,6 @@
 from pydantic import BaseModel, validator
 from itertools import combinations
+from ortools.linear_solver import pywraplp
 
 from .products import Product
 from .vehicle import Vehicles
@@ -50,6 +51,8 @@ class DeliveryService(BaseModel):
 
     def select_packages(self) -> list[Product]:
         """
+        *** NOTE: Marking it as Depreciated. Use `package_selection()` instead ***
+
         Selecting products for delivery
 
         Selecting a set of packages/products for the certain dispatch made.
@@ -87,6 +90,75 @@ class DeliveryService(BaseModel):
                 return packages
         return []
 
+    def package_selection(self) -> list[Product]:
+        """
+        Selecting products for delivery
+
+        Selecting a set of packages/products for the certain dispatch made.
+        The selection criteria is as below: (order based priority)
+            1. Maximum number of packages
+            2. Heavier packages
+            3. Packages that can be shipped faster
+        The logic is based on Integer Programming backed with SCIP Solver (Solving Constraint Integer Programs)
+        The above mentioned multiple objectives are attained one by one
+        The detailed explanation is in the README
+
+        Returns:
+            list[Product]: the list of products selected
+        """
+        undelivered: list[Product] = self.get_undelivered_packages()
+        items_idx: range = range(len(undelivered))
+
+        # setting up default SCIP (Solution Constraint Linear Program) solver
+        solver: pywraplp.Solver = pywraplp.Solver.CreateSolver('SCIP')
+
+        # Boolean variable to tell if the item is picked (1 if picked, else 0)
+        var_x: list[pywraplp.Variable] = [solver.BoolVar(f'x_{idx}') for idx in items_idx]
+
+        # ------ Step 1: Work out to 1st objective - Maximizing the number of items picked
+        # Constraint 1: Total weight of packages < threshold capacity
+        solver.Add(
+            sum(var_x[idx] * package.weight
+                for idx, package in enumerate(undelivered)) <= self.transport.max_load)
+
+        # Objective 1: maximize the number of items picked
+        value_objective: pywraplp.Objective = solver.Objective()
+        for idx in items_idx: value_objective.SetCoefficient(var_x[idx], 1)
+        value_objective.SetMaximization()
+
+        # solve now
+        status: int = solver.Solve()
+
+        # ------ Step 2: Work out to 2nd objective - Maximizing the package weight
+        # Constraint 2: add the previous objective value as constraint with solution
+        solver.Add(
+            sum(var_x[idx] * 1
+                for idx in items_idx) == value_objective.Value())
+
+        # Objective 2: maximize the total weight of selected items
+        weight_objective: pywraplp.Objective = solver.Objective()
+        for idx, package in enumerate(undelivered):
+            weight_objective.SetCoefficient(var_x[idx], package.weight)
+        weight_objective.SetMaximization()
+
+        # solve now
+        status: int = solver.Solve()
+
+        # ------ Step 3: Work out to 3rd objective - Minimizing the max distance to deliver
+        # Constraint 3:  add the previous objective value as constraint with solution
+        solver.Add(sum(var_x[idx] * package.weight for idx, package in enumerate(undelivered)) == weight_objective.Value())
+
+        # Objective 3: Minimize the max distance value in package selected
+        distance_objective: pywraplp.Objective = solver.Objective()
+        for idx, package in enumerate(undelivered):
+            distance_objective.SetCoefficient(var_x[idx], package.destination_distance)
+        distance_objective.SetMinimization()
+
+        # solve now
+        status: int = solver.Solve()
+
+        return [package for idx, package in enumerate(undelivered) if var_x[idx].solution_value() > 0]
+
     def deliver(self) -> None:
         """
         Triggers delivery of given Packages/Products
@@ -100,7 +172,7 @@ class DeliveryService(BaseModel):
         while total_pkg > 0:
             vehicle_time: float = self.transport.next_available()
             max_time: float = 0
-            for package in self.select_packages():
+            for package in self.package_selection():
                 total_pkg -= 1
                 package.delivered_time = decimal_floor(
                     vehicle_time + (package.destination_distance / self.transport.speed), 2
