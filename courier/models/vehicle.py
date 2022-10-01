@@ -1,4 +1,4 @@
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, validator, PrivateAttr
 from pydantic.fields import ModelField
 from heapq import heappush, heappop
 
@@ -25,17 +25,14 @@ class Vehicles(BaseModel):
     count: int
     max_load: float
     speed: float
+    __vehicle_availabile_time: list[float] = PrivateAttr(default_factory=list)
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.__vehicle_availabile_time = [0 for _ in range(kwargs['count'])]
 
     # a validator for Model input args
-    __validate_attrs = validator("max_load", "speed", allow_reuse=True)(unsigned_model_validate)
-
-    @validator("count", pre=True)
-    def __validate_vehicle(cls, count, values, field) -> int:
-        # Vehicle count validator
-        # As part of vehicle count validation, an array is also created to hold availability information
-        unsigned_model_validate(count, field)
-        cls.__vehicle_availabile_time = [0 for _ in range(count)]
-        return count
+    __validate_attrs = validator("count", "max_load", "speed", allow_reuse=True)(unsigned_model_validate)
 
     @property
     def vehicle_availabile_time(self) -> list[float]:

@@ -35,7 +35,7 @@ class Product(BaseModel):
     )
 
     def __str__(self):
-        return f"{self.name} {self.__discount} {self.calculate_total_cost()} {self.delivered_time}"
+        return f"{self.name} {self.discount()} {self.calculate_total_cost()} {self.delivered_time}"
 
     def __getitem__(self, item: str):
         return getattr(self, item)
