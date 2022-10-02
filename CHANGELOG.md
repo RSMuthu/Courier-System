@@ -2,6 +2,11 @@ Basic Courier Management System
 ======================================
 This file is used to list changes made in each version of the Basic Courier Management System.
 
+v0.1.2
+------
+### Improvements
+- Seperated few necessary data from code to the config file to make it easily configurable
+
 v0.1.1
 ------
 ### Bug
