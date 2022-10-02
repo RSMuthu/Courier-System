@@ -2,6 +2,10 @@ from pydantic import BaseModel, validator
 from .offers import Offer
 from courier.utils import unsigned_model_validate
 
+import json
+
+with open("./courier/config/cost.json", 'r') as json_obj:
+    COST = json.load(json_obj)
 
 class Product(BaseModel):
     """
@@ -51,7 +55,7 @@ class Product(BaseModel):
     def __delivery_cost(self) -> float:
         # Calculate base delivery cost
         # Given Logic: Base Delivery Cost + (Package Weight * 10) + (Delivery Distance * 5)
-        return self.base_cost + (self.weight * 10) + (self.destination_distance * 5)
+        return self.base_cost + (self.weight * COST['per_kg_cost']) + (self.destination_distance * COST['per_km_cost'])
 
     def discount(self) -> float:
         """

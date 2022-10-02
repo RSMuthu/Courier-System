@@ -2,7 +2,7 @@ from pydantic import BaseModel
 
 import json
 
-with open("./offers_config.json", 'r') as json_obj:
+with open("./courier/config/offers.json", 'r') as json_obj:
     OFFERS = json.load(json_obj)
 
 class Offer(BaseModel):
